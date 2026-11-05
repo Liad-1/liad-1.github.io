@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE_TITLE } from '../consts';
+import { withBase } from '../utils/url';
 
 const recentPosts = (await getCollection('blog', ({ data }) => !data.draft))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
@@ -19,7 +20,7 @@ const formatDate = (date: Date) =>
       and write about what I'm learning.
     </p>
     <p>
-      <a href="/about">More about me</a> · <a href="/projects">See my projects</a>
+      <a href={withBase('/about')}>More about me</a> · <a href={withBase('/projects')}>See my projects</a>
     </p>
   </section>
 
@@ -32,7 +33,7 @@ const formatDate = (date: Date) =>
         <ul class="post-list">
           {recentPosts.map((post) => (
             <li>
-              <a href={`/blog/${post.id}/`}>{post.data.title}</a>
+              <a href={withBase(`/blog/${post.id}/`)}>{post.data.title}</a>
               <time class="muted" datetime={post.data.pubDate.toISOString()}>
                 {formatDate(post.data.pubDate)}
               </time>

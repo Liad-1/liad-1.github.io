@@ -40,6 +40,12 @@ src/
 
 ## Deploying
 
-Run `npm run build` and upload the `dist/` folder to any static host. Netlify,
-Vercel and Cloudflare Pages detect Astro automatically. For GitHub Pages, see
-<https://docs.astro.build/en/guides/deploy/github/>.
+The site deploys to GitHub Pages automatically on every push to `master`
+via `.github/workflows/deploy.yml`. It is served at
+<https://riadonaru.github.io/PersonalWebsite/>.
+
+One-time setup: in the GitHub repo, go to **Settings → Pages** and set
+**Source** to **GitHub Actions**.
+
+Because the site lives under `/PersonalWebsite/`, write internal links with the
+`withBase()` helper from `src/utils/url.ts`, e.g. `href={withBase('/about')}`.
