@@ -60,6 +60,34 @@
         aspect-ratio: var(--ar);
       }
       canvas { display: block; width: 100%; height: 100%; cursor: pointer; outline: none; }
+      .solver {
+        margin: 1rem auto 0;
+        max-width: var(--w, 854px);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+      }
+      .solver[hidden] { display: none; }
+      .solver h2 { margin: 0 0 0.5rem; font-size: 1rem; }
+      .solver h2 .muted { font-weight: 400; font-size: 0.85rem; }
+      #solver-log {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 14rem;
+        overflow-y: auto;
+        font: 0.85rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      #solver-log li { padding: 0.15rem 0; border-bottom: 1px solid var(--border); }
+      #solver-log li:last-child { border-bottom: 0; }
+      #solver-log .flag { color: #dc2626; }
+      #solver-log .guess { color: #b45309; font-weight: 600; }
+      #solver-log .summary { font-weight: 700; }
+      @media (prefers-color-scheme: dark) {
+        #solver-log .flag { color: #f87171; }
+        #solver-log .guess { color: #fbbf24; }
+      }
       .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
       .btn {
         display: inline-block;
@@ -89,12 +117,17 @@
         <strong>Left-click</strong> to reveal a cell, <strong>right-click</strong> to flag it.
         The smiley starts a new game, the gear opens the settings (click it again to save; the game restarts),
         and <kbd>Esc</kbd> pauses.
-        AUTO SOLVER is still a work in progress: it makes the first move and then hands back to you
-        (click the face to play).
+        AUTO SOLVER plays by itself: it makes every move the numbers make certain, and when it's stuck
+        it writes each hidden cell's chance of being a mine on the board and guesses the lowest.
+        Click the face to take over with a new game.
       </p>
       <div class="stage">
         <canvas id="canvas" tabindex="0" aria-label="Minesweeper game" oncontextmenu="event.preventDefault()"></canvas>
       </div>
+      <section class="solver" id="solver-panel" aria-live="polite" hidden>
+        <h2>Solver moves <span class="muted">(newest first)</span></h2>
+        <ol id="solver-log"></ol>
+      </section>
       <div class="actions">
         <button class="btn btn--primary" type="button" onclick="location.reload()">↻ Restart</button>
         <button class="btn" type="button" id="reset-settings">Reset settings</button>

@@ -1,17 +1,18 @@
 /*
  * Minesweeper — a JavaScript port of https://github.com/Liad-1/Minesweeper
- * (Python + pygame, commit 865f999a38f21f1b5115ddbcd4dfb092d6914d7a).
+ * (Python + pygame, auto-solver branch, commit 80ffca9 "release 1").
  *
  * The rules, layout maths and sprite indices follow game.py, grid.py, cell.py,
- * globals.py, sprites.py, button.py, textbox.py and checkbox.py; names in
- * comments refer to them. Browser-only differences:
+ * solver.py, globals.py, sprites.py, button.py, textbox.py and checkbox.py;
+ * names in comments refer to them. Browser-only differences:
  *  - Settings are kept in localStorage and applied in place (the original wrote
  *    settings.json and closed the window). Only the settings that do something
  *    in a browser are shown; the network/sound ones are left out.
  *  - Typed settings are range-checked (out of range shows ERR) so a saved value
  *    can't leave the page unusable.
- *  - AUTO SOLVER is still a work in progress in the original (it makes the first
- *    move only); a caption says so while its board is shown.
+ *  - AUTO SOLVER (solver.py) runs from the frame loop instead of a thread, with
+ *    the same delays and pause behaviour. The moves it prints to the console
+ *    are listed on the page through the `log` callback.
  */
 (() => {
   'use strict';
@@ -212,6 +213,289 @@
     draw() { this.forEach((cell) => cell.draw()); }
   }
 
+  // ---- AUTO SOLVER -------------------------------------------------------------
+  // Pacing of the animated solver (ms), as Game.SOLVER_* in game.py: one certain
+  // move, showing the probabilities before acting on them, and highlighting a
+  // guess before clicking it.
+  const SOLVER_STEP_MS = 150;
+  const SOLVER_PROB_MS = 600;
+  const SOLVER_GUESS_MS = 400;
+  const SOLVER_NODE_LIMIT = 200000; // backtracking budget per frontier component
+  const EPS = 1e-9;
+
+  const LOG_FACT = [0];
+  function logFact(n) {
+    while (LOG_FACT.length <= n) LOG_FACT.push(LOG_FACT[LOG_FACT.length - 1] + Math.log(LOG_FACT.length));
+    return LOG_FACT[n];
+  }
+  function logChoose(n, k) {
+    return k < 0 || k > n ? -Infinity : logFact(n) - logFact(k) - logFact(n - k);
+  }
+  function convolve(a, b) {
+    const r = new Array(a.length + b.length - 1).fill(0);
+    for (let i = 0; i < a.length; i++) if (a[i]) for (let j = 0; j < b.length; j++) r[i + j] += a[i] * b[j];
+    return r;
+  }
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const pct = (p) => (p > 0 && p < 0.005 ? '<1' : p < 1 && p > 0.995 ? '>99' : String(Math.round(p * 100)));
+
+  /**
+   * Decides the next moves using only what a player can see: which cells are
+   * hidden or flagged, and the numbers on revealed cells. nextMoves() returns
+   * { moves, probs, stage }, where each move is { type: 'reveal'|'flag', id, x, y,
+   * reason, guess?, p? } and probs (when computed) maps cell id → mine probability.
+   */
+  class Solver {
+    constructor(grid, easyStart) {
+      this.grid = grid;
+      this.easyStart = easyStart;
+    }
+
+    cellAt(id) { return this.grid.contents[Math.floor(id / this.grid.w)][id % this.grid.w]; }
+    label(id) { return `(${(id % this.grid.w) + 1}, ${Math.floor(id / this.grid.w) + 1})`; }
+
+    neighbours(id) {
+      const { w, h } = this.grid;
+      const x = id % w, y = Math.floor(id / w);
+      const out = [];
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if ((dx || dy) && x + dx >= 0 && x + dx < w && y + dy >= 0 && y + dy < h) out.push((y + dy) * w + x + dx);
+      }
+      return out;
+    }
+
+    move(type, id, reason, extra = {}) {
+      return { type, id, x: id % this.grid.w, y: Math.floor(id / this.grid.w), reason, ...extra };
+    }
+
+    nextMoves() {
+      const g = this.grid;
+      const { w, h } = g;
+      if (g.trollMode) return { moves: [], probs: null, stage: 'troll' };
+
+      // 1. Opening move.
+      if (!g.clickedCell) {
+        const id = Math.floor(h / 2) * w + Math.floor(w / 2);
+        if (this.easyStart) {
+          return { moves: [this.move('reveal', id, 'opening move; easy start keeps the first click safe')], probs: null, stage: 'rule' };
+        }
+        const p = g.mines / g.tiles;
+        return { moves: [this.move('reveal', id, `opening guess, ${pct(p)}% risk`, { guess: true, p })], probs: null, stage: 'guess' };
+      }
+
+      let flags = 0;
+      const unknown = [];
+      const isUnknown = new Uint8Array(w * h);
+      for (let id = 0; id < w * h; id++) {
+        const c = this.cellAt(id);
+        if (c.flagged) flags++;
+        else if (c.hidden) { unknown.push(id); isUnknown[id] = 1; }
+      }
+      const minesLeft = g.mines - flags;
+      if (!unknown.length) return { moves: [], probs: null, stage: 'done' };
+
+      // 2. Count rule.
+      if (minesLeft <= 0) {
+        return { moves: unknown.map((id) => this.move('reveal', id, 'every mine is already flagged')), probs: null, stage: 'rule' };
+      }
+      if (unknown.length === minesLeft) {
+        const reason = unknown.length === 1
+          ? 'the last hidden cell must be the last mine'
+          : `the ${unknown.length} hidden cells left must all be mines`;
+        return { moves: unknown.map((id) => this.move('flag', id, reason)), probs: null, stage: 'rule' };
+      }
+
+      // Constraints: each revealed number with hidden neighbours.
+      const cons = [];
+      for (let id = 0; id < w * h; id++) {
+        const c = this.cellAt(id);
+        if (c.hidden || c.value < 1 || c.value > 8) continue;
+        const cells = [];
+        let f = 0;
+        for (const n of this.neighbours(id)) {
+          if (this.cellAt(n).flagged) f++;
+          else if (isUnknown[n]) cells.push(n);
+        }
+        if (cells.length) cons.push({ id, v: c.value, cells, set: new Set(cells), r: c.value - f, f });
+      }
+
+      const out = new Map();
+      const add = (type, id, reason) => { if (!out.has(id)) out.set(id, this.move(type, id, reason)); };
+      const done = (stage, probs = null) => ({ moves: [...out.values()], probs, stage });
+
+      // 3. Single-number rule.
+      for (const c of cons) {
+        const at = this.label(c.id);
+        if (c.r === 0) {
+          for (const id of c.cells) add('reveal', id, `the ${c.v} at ${at} already has its ${c.v === 1 ? 'mine' : 'mines'}`);
+        } else if (c.r === c.cells.length) {
+          const reason = c.f === 0
+            ? `the ${c.v} at ${at} has exactly ${plural(c.v, 'hidden neighbour')}`
+            : `the ${c.v} at ${at} needs ${c.r} more and has ${plural(c.r, 'hidden neighbour')}`;
+          for (const id of c.cells) add('flag', id, reason);
+        }
+      }
+      if (out.size) return done('rule');
+
+      // 4. Subset rule: a's hidden cells are all next to b too.
+      for (const a of cons) {
+        for (const b of cons) {
+          if (a === b || a.cells.length >= b.cells.length) continue;
+          if (Math.abs((a.id % w) - (b.id % w)) > 2 || Math.abs(Math.floor(a.id / w) - Math.floor(b.id / w)) > 2) continue;
+          if (!a.cells.every((id) => b.set.has(id))) continue;
+          const diff = b.cells.filter((id) => !a.set.has(id));
+          const rd = b.r - a.r;
+          const pair = `the ${b.v} at ${this.label(b.id)}`, other = `the ${a.v} at ${this.label(a.id)}`;
+          if (rd === 0) {
+            for (const id of diff) add('reveal', id, `${pair} gets all its remaining mines from the cells next to ${other}`);
+          } else if (rd === diff.length) {
+            for (const id of diff) add('flag', id, `${pair} needs ${plural(rd, 'more mine')} than ${other} can supply`);
+          }
+        }
+      }
+      if (out.size) return done('rule');
+
+      // 5. Exact probabilities.
+      const probs = this.probabilities(cons, unknown, minesLeft);
+      for (const [id, p] of probs) {
+        if (p <= EPS) add('reveal', id, '0% mine in every possible arrangement');
+        else if (p >= 1 - EPS) add('flag', id, 'a mine in every possible arrangement');
+      }
+      if (out.size) return done('probability', probs);
+
+      // 6. Guess the safest cell (ties: corners, then edges).
+      const edgeScore = (id) => {
+        const x = id % w, y = Math.floor(id / w);
+        return (x === 0 || x === w - 1 ? 1 : 0) + (y === 0 || y === h - 1 ? 1 : 0);
+      };
+      let best = -1, bestP = Infinity;
+      for (const [id, p] of probs) {
+        if (p < bestP - EPS || (Math.abs(p - bestP) <= EPS && edgeScore(id) > edgeScore(best))) {
+          best = id;
+          bestP = p;
+        }
+      }
+      return {
+        moves: [this.move('reveal', best, `lowest risk, ${pct(bestP)}%`, { guess: true, p: bestP })],
+        probs,
+        stage: 'guess',
+      };
+    }
+
+    probabilities(cons, unknown, minesLeft) {
+      // Group frontier cells into components linked by shared numbers.
+      const index = new Map();
+      for (const c of cons) for (const id of c.cells) if (!index.has(id)) index.set(id, index.size);
+      const parent = Array.from({ length: index.size }, (_, i) => i);
+      const find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+      for (const c of cons) {
+        const first = find(index.get(c.cells[0]));
+        for (const id of c.cells) parent[find(index.get(id))] = first;
+      }
+      const comps = new Map();
+      for (const [id, i] of index) {
+        const root = find(i);
+        if (!comps.has(root)) comps.set(root, { cells: [], cons: [] });
+        comps.get(root).cells.push(id);
+      }
+      for (const c of cons) comps.get(find(index.get(c.cells[0]))).cons.push(c);
+
+      const interior = unknown.filter((id) => !index.has(id));
+      const N = interior.length;
+      const probs = new Map();
+      const fallback = () => {
+        for (const c of cons) for (const id of c.cells) probs.set(id, Math.max(probs.get(id) || 0, c.r / c.cells.length));
+        for (const id of interior) probs.set(id, Math.min(1, minesLeft / unknown.length));
+        return probs;
+      };
+
+      const dists = [];
+      for (const comp of comps.values()) {
+        const d = this.enumerate(comp, minesLeft);
+        if (!d) return fallback();
+        dists.push(d);
+      }
+
+      const total = dists.reduce((acc, d) => convolve(acc, d.counts), [1]);
+      const logW = (K) => logChoose(N, minesLeft - K);
+      let maxLW = -Infinity;
+      total.forEach((t, K) => { if (t > 0) maxLW = Math.max(maxLW, logW(K)); });
+      if (maxLW === -Infinity) return fallback();
+      const weight = (K) => { const lw = logW(K); return lw === -Infinity ? 0 : Math.exp(lw - maxLW); };
+
+      let Z = 0, interiorMines = 0;
+      total.forEach((t, K) => {
+        const wK = t * weight(K);
+        Z += wK;
+        interiorMines += wK * (minesLeft - K);
+      });
+      if (!(Z > 0)) return fallback();
+
+      dists.forEach((d, i) => {
+        const rest = dists.reduce((acc, other, j) => (j === i ? acc : convolve(acc, other.counts)), [1]);
+        const sums = new Float64Array(d.cells.length);
+        d.cellMines.forEach((cm, k) => {
+          if (!cm) return;
+          let wk = 0;
+          rest.forEach((r, K2) => { if (r) wk += r * weight(k + K2); });
+          if (wk) for (let c = 0; c < cm.length; c++) sums[c] += cm[c] * wk;
+        });
+        d.cells.forEach((id, c) => probs.set(id, sums[c] / Z));
+      });
+      const pInterior = N ? interiorMines / Z / N : 0;
+      for (const id of interior) probs.set(id, pInterior);
+      return probs;
+    }
+
+    // Count the mine arrangements of one component that satisfy its numbers,
+    // by number of mines k, and how often each cell is a mine. null = too big.
+    enumerate(comp, minesLeft) {
+      const { cells } = comp;
+      const n = cells.length;
+      const local = new Map(cells.map((id, i) => [id, i]));
+      const cons = comp.cons.map((c) => ({ r: c.r, mines: 0, left: c.cells.length, vars: c.cells.map((id) => local.get(id)) }));
+      const varCons = Array.from({ length: n }, () => []);
+      for (const c of cons) for (const v of c.vars) varCons[v].push(c);
+
+      const counts = new Array(n + 1).fill(0);
+      const cellMines = new Array(n + 1).fill(null);
+      const assign = new Uint8Array(n);
+      let nodes = 0, mines = 0, aborted = false;
+
+      const rec = (i) => {
+        if (aborted || ++nodes > SOLVER_NODE_LIMIT) { aborted = true; return; }
+        if (i === n) {
+          counts[mines]++;
+          const cm = cellMines[mines] || (cellMines[mines] = new Float64Array(n));
+          for (let v = 0; v < n; v++) if (assign[v]) cm[v]++;
+          return;
+        }
+        for (let val = 0; val <= 1; val++) {
+          if (val && mines >= minesLeft) continue;
+          let ok = true;
+          for (const c of varCons[i]) {
+            c.left--;
+            c.mines += val;
+            if (c.mines > c.r || c.mines + c.left < c.r) ok = false;
+          }
+          if (ok) {
+            assign[i] = val;
+            mines += val;
+            rec(i + 1);
+            mines -= val;
+            assign[i] = 0;
+          }
+          for (const c of varCons[i]) {
+            c.left++;
+            c.mines -= val;
+          }
+        }
+      };
+      rec(0);
+      return aborted ? null : { cells, counts, cellMines };
+    }
+  }
+
   // ---- button.py -------------------------------------------------------------
   class Button {
     constructor(g, x, y, text) {
@@ -308,8 +592,9 @@
 
   // ---- game.py -----------------------------------------------------------------
   class Game {
-    constructor(settings) {
+    constructor(settings, log = { clear() {}, add() {} }) {
       const S = (this.S = settings);
+      this.log = log;
       this.CE = 34 * S.scale;
       this.TOP = 100 * S.scale;
       this.LRB = 16 * S.scale;
@@ -326,7 +611,17 @@
       this.displayedScreen = Screen.MAIN;
       this.timerSet = true; // timerEvent
       this.face = SMILE; // the module-level RESET in game.py
-      this.solverBoard = false;
+      this.solverBoard = false; // the board belongs to an AUTO SOLVER run
+      this.solver = null; // set while the solver is playing
+      this.solverQueue = [];
+      this.solverWaitUntil = 0;
+      this.solverStatus = '';
+      this.solverMoves = 0;
+      this.solverGuesses = 0;
+      this.lastGuess = null;
+      this.probs = null; // cell id -> mine probability, drawn on hidden cells
+      this.highlight = -1; // cell id of the guess about to be clicked
+      this.lastFrame = 0;
       this.pauseIsPressed = false;
       this.pauseWasPressed = false;
       this.settingButtonPressed = false;
@@ -454,12 +749,98 @@
       if (this.flaggedCells === this.grid.mines) this.endgameHandler();
     }
 
-    // AUTO SOLVER: still a work in progress in the original — it makes a random
-    // first move (the rest of solve() only printed to the console).
+    // AUTO SOLVER (solve() in game.py). Moves are played from frame() so each
+    // one can be watched; see SOLVER_*_MS for the pacing.
     solve() {
-      const x = Math.floor(Math.random() * this.S.width);
-      const y = Math.floor(Math.random() * this.S.height);
-      this.reveal(x, y);
+      this.solver = new Solver(this.grid, this.S.easy_start);
+      this.solverQueue = [];
+      this.solverWaitUntil = 0;
+      this.solverMoves = 0;
+      this.solverGuesses = 0;
+      this.lastGuess = null;
+      this.probs = null;
+      this.highlight = -1;
+      this.solverStatus = 'Solver: starting';
+      this.log.clear();
+    }
+
+    stopSolver(summary, status) {
+      this.solver = null;
+      this.solverQueue = [];
+      this.probs = null;
+      this.highlight = -1;
+      this.solverStatus = status;
+      if (summary) this.log.add(summary, 'summary');
+    }
+
+    solverEnded() {
+      if (this.resetBtn.value === COOL) {
+        const guesses = `${this.solverGuesses} ${this.solverGuesses === 1 ? 'guess' : 'guesses'}`;
+        this.stopSolver(`Won in ${plural(this.solverMoves, 'move')} (${guesses})`, 'Solver: won');
+        return true;
+      }
+      if (this.resetBtn.value === DEAD) {
+        const g = this.lastGuess;
+        this.stopSolver(g ? `Lost on guess #${this.solverGuesses} (${pct(g.p)}% risk)` : 'Lost', 'Solver: lost on a guess');
+        return true;
+      }
+      if (this.grid.trollMode) {
+        this.stopSolver('Gave up: troll mode (too many mines for a safe start)', 'Solver gives up: troll mode');
+        return true;
+      }
+      return false;
+    }
+
+    // The solve() loop of game.py as a state machine; called every frame while
+    // the solver may play. Each wait(...) there sets solverWaitUntil here.
+    solverTick(now) {
+      while (this.solver && now >= this.solverWaitUntil) {
+        if (!this.solverQueue.length) {
+          // End of a batch: the probabilities stayed up through its last step.
+          this.probs = null;
+          if (this.solverEnded()) return;
+          const result = this.solver.nextMoves();
+          if (!result.moves.length) {
+            this.stopSolver('Stopped: no moves left', 'Solver: stopped');
+            return;
+          }
+          this.solverQueue = result.moves;
+          this.probs = result.probs;
+          if (result.probs) {
+            // Show the probabilities before acting on them.
+            this.solverStatus = 'Solver: reading the odds';
+            this.solverWaitUntil = now + SOLVER_PROB_MS;
+            continue;
+          }
+        }
+
+        const move = this.solverQueue[0];
+        if (move.guess && this.highlight !== move.id) {
+          this.highlight = move.id;
+          this.solverStatus = `Solver: guessing (${pct(move.p)}% risk)`;
+          this.solverWaitUntil = now + SOLVER_GUESS_MS;
+          continue;
+        }
+        this.solverQueue.shift();
+        this.highlight = -1;
+
+        const cell = this.grid.contents[move.y][move.x];
+        if (!cell.hidden || cell.flagged) continue; // already opened by an earlier move
+        this.solverMoves += 1;
+        const where = `(${move.x + 1}, ${move.y + 1})`;
+        if (move.guess) {
+          this.solverGuesses += 1;
+          this.lastGuess = move;
+          this.log.add(`#${this.solverMoves} Guess ${where} — ${move.reason}`, 'guess');
+        } else {
+          this.solverStatus = 'Solver: certain move';
+          this.log.add(`#${this.solverMoves} ${move.type === 'flag' ? 'Flag' : 'Reveal'} ${where} — ${move.reason}`, move.type);
+        }
+        if (move.type === 'flag') this.flag(move.x, move.y);
+        else this.reveal(move.x, move.y);
+        if (this.solverEnded()) return;
+        this.solverWaitUntil = now + SOLVER_STEP_MS;
+      }
     }
 
     endgameHandler() {
@@ -484,6 +865,7 @@
             this.quit = true;
           } else if (this.botButton.collide(px, py)) {
             this.displayedScreen = Screen.GAME;
+            this.grid.enabled = true; // so the timer runs and Esc pauses the solver
             this.solverBoard = true;
             this.solve();
           }
@@ -492,6 +874,7 @@
         case Screen.GAME: {
           const { LRB, TOP, CE, W, H } = this;
           if (this.grid.enabled && TOP < py && py < H - LRB && LRB < px && px < W - LRB) {
+            if (this.solver) break; // the board is the solver's while it plays
             const x = Math.floor((px - LRB) / CE);
             const y = Math.floor((py - TOP) / CE);
             if (!this.grid.inBounds(x, y)) break;
@@ -587,7 +970,9 @@
       this.resetBtn.value = SMILE;
       this.elapsedTime = 0;
       this.flaggedCells = 0;
+      if (this.solverBoard) this.log.clear();
       this.solverBoard = false;
+      this.stopSolver(null, '');
       this.grid = new Grid(this);
       this.grid.enabled = true;
     }
@@ -605,11 +990,55 @@
     }
 
     drawSolverNote() {
-      let note = 'Auto solver: work in progress';
+      let note = this.solverStatus;
+      if (!note) return;
       ctx.font = this.font(this.FONT_SIZE);
-      if (ctx.measureText(note).width > this.W - 2 * this.LRB) note = 'Solver: WIP';
-      const y = (this.resetBtn.top + this.CE + this.TOP) / 2;
-      this.text(note, this.W / 2, y, this.FONT_SIZE, BLACK, 'center', 'middle');
+      if (ctx.measureText(note).width > this.W - 2 * this.LRB) {
+        note = note.replace('Solver gives up: ', '').replace('Solver: ', '').replace(/ \((.*) risk\)/, ' $1');
+      }
+      this.text(note, this.W / 2, this.statusY(), this.FONT_SIZE, BLACK, 'center', 'middle');
+    }
+
+    // Vertical centre of the strip between the smiley and the grid (status_y).
+    statusY() {
+      return (this.resetBtn.top + this.CE + this.TOP) / 2;
+    }
+
+    // Mine probabilities on the hidden cells, and a frame around the next guess
+    // (draw_solver_overlay without the status line).
+    drawProbabilities() {
+      const { CE } = this;
+      if (this.probs) {
+        const o = Math.max(1, Math.floor(this.S.scale * 1.5));
+        const offsets = [[-o, 0], [o, 0], [0, -o], [0, o], [-o, -o], [o, o], [-o, o], [o, -o]];
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (const [id, p] of this.probs) {
+          const cell = this.grid.contents[Math.floor(id / this.S.width)][id % this.S.width];
+          if (!cell.hidden || cell.flagged) continue;
+          const cx = cell.left + CE / 2, cy = cell.top + CE / 2;
+          const label = pct(p);
+          // Colour from the shown label, like prob_label().
+          const lp = label === '<1' ? 0 : label === '>99' ? 1 : Number(label) / 100;
+          ctx.font = this.font(Math.floor(CE * (label.length <= 2 ? 0.42 : 0.34)));
+          ctx.fillStyle = BLACK;
+          for (const [dx, dy] of offsets) ctx.fillText(label, cx + dx, cy + dy);
+          ctx.fillStyle = `hsl(${120 * (1 - lp)}, 95%, 55%)`;
+          ctx.fillText(label, cx, cy);
+        }
+      }
+      if (this.highlight >= 0) {
+        const cell = this.grid.contents[Math.floor(this.highlight / this.S.width)][this.highlight % this.S.width];
+        const lw = Math.max(2, Math.floor(CE / 12));
+        // pygame.draw.rect borders lie inside the rect.
+        const b = lw + 2;
+        ctx.lineWidth = b;
+        ctx.strokeStyle = BLACK;
+        ctx.strokeRect(cell.left + b / 2, cell.top + b / 2, CE - b, CE - b);
+        ctx.lineWidth = lw;
+        ctx.strokeStyle = 'rgb(255,212,0)';
+        ctx.strokeRect(cell.left + 1 + lw / 2, cell.top + 1 + lw / 2, CE - 2 - lw, CE - 2 - lw);
+      }
     }
 
     draw() {
@@ -624,7 +1053,10 @@
         case Screen.GAME:
           this.drawPanel();
           this.grid.draw();
-          if (this.solverBoard) this.drawSolverNote();
+          if (this.solverBoard) {
+            this.drawProbabilities();
+            this.drawSolverNote();
+          }
           break;
         case Screen.SETTINGS:
           this.drawPanel();
@@ -633,8 +1065,12 @@
           for (const box of this.checkboxes) box.draw();
           break;
         case Screen.PAUSE:
+          // The board stays on screen, frozen; PAUSED goes in the strip between
+          // the smiley and the grid (where the solver's status goes).
           this.drawPanel();
-          this.text('PAUSED', this.W / 2, this.H / 2, this.PAUSE_FONT_SIZE, BLACK, 'center', 'middle');
+          this.grid.draw();
+          if (this.solverBoard) this.drawProbabilities();
+          this.text('PAUSED', this.W / 2, this.statusY(), Math.floor(this.CE * 0.75), BLACK, 'center', 'middle');
           break;
       }
     }
@@ -643,11 +1079,36 @@
       this.draw();
       this.pauseHandler();
       this.tickTimer(now);
+      if (this.solver) {
+        if (this.displayedScreen === Screen.GAME && this.grid.enabled) this.solverTick(now);
+        else if (this.lastFrame) this.solverWaitUntil += now - this.lastFrame; // paused: hold the schedule
+      }
+      this.lastFrame = now;
     }
   }
 
   // ---- main.py: event wiring and loop ----------------------------------------
   let game = null;
+
+  // The page's "Solver moves" panel (optional: the game runs without it).
+  const solverLog = (() => {
+    const panel = document.getElementById('solver-panel');
+    const list = document.getElementById('solver-log');
+    if (!panel || !list) return { clear() {}, add() {} };
+    return {
+      clear() {
+        list.replaceChildren();
+        panel.hidden = true;
+      },
+      add(text, kind) {
+        const li = document.createElement('li');
+        li.textContent = text;
+        li.className = kind;
+        list.prepend(li);
+        panel.hidden = false;
+      },
+    };
+  })();
 
   function toGame(e) {
     const r = canvas.getBoundingClientRect();
@@ -680,9 +1141,15 @@
         location.href = '../../projects/';
         return;
       }
-      game = new Game(loadSettings());
+      solverLog.clear();
+      game = new Game(loadSettings(), solverLog);
     }
     requestAnimationFrame(loop);
+  }
+
+  // For the automated solver benchmark only (…/index.html?test).
+  if (new URLSearchParams(location.search).has('test')) {
+    window.minesweeperTest = { Game, Grid, Solver, loadSettings, MINE, COOL, DEAD, getGame: () => game };
   }
 
   // Loading screen, then start.
@@ -704,7 +1171,7 @@
     loadImage('assets/btn_right.png').then((i) => { assets.btn_right = i; }),
     loadImage('assets/btn_back.png').then((i) => { assets.btn_back = i; }),
   ]).then(() => {
-    game = new Game(loadSettings());
+    game = new Game(loadSettings(), solverLog);
     requestAnimationFrame(loop);
   }).catch((err) => {
     ctx.fillStyle = BG_COLOR;

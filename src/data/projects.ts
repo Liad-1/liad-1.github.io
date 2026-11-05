@@ -36,7 +36,7 @@ export const projects: Project[] = [
   {
     title: 'Minesweeper (Python)',
     description:
-      'Classic Minesweeper built with pygame: a main menu, a safe first click, flags, a timer and mine counter, and an in-game settings screen for board size and mine density.',
+      'Classic Minesweeper built with pygame: a main menu, a safe first click, flags, a timer and mine counter, and an in-game settings screen, and an auto solver that plays by itself.',
     tags: ['Python', 'pygame', 'JavaScript'],
     repo: 'https://github.com/Liad-1/Minesweeper',
     demo: '/demos/minesweeper/index.html',
