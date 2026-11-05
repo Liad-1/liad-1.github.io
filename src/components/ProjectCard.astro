@@ -1,5 +1,6 @@
 ---
 import type { Project } from '../data/projects';
+import { withBase } from '../utils/url';
 
 interface Props {
   project: Project;
@@ -15,6 +16,7 @@ const { project } = Astro.props;
     {project.tags.map((tag) => <li>{tag}</li>)}
   </ul>
   <p class="card__links">
+    {project.demo && <a class="btn btn--primary" href={withBase(project.demo)}>▶ Launch</a>}
     <a href={project.repo}>View on GitHub →</a>
     {project.url && <a href={project.url}>Live demo →</a>}
   </p>

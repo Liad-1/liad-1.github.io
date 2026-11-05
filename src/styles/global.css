@@ -207,6 +207,7 @@ pre {
 .card__links {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 1rem;
   margin-bottom: 0;
 }
@@ -214,6 +215,10 @@ pre {
 .card__links a {
   text-decoration: none;
   font-weight: 500;
+}
+
+.card__links a.btn--primary {
+  color: #fff;
 }
 
 .tags {
