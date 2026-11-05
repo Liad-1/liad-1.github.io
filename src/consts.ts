@@ -7,8 +7,8 @@ export const GITHUB_URL = 'https://github.com/Liad-1';
 
 // Set these to show the LinkedIn link and the resume download button.
 // RESUME_PATH is a file in public/, e.g. '/Liad-Or-Resume.pdf'.
-export const LINKEDIN_URL = '';
-export const RESUME_PATH = '';
+export const LINKEDIN_URL: string = 'https://www.linkedin.com/in/liad-or/';
+export const RESUME_PATH: string = '';
 
 // Links starting with '/#' scroll to a section of the home page.
 export const NAV_LINKS = [

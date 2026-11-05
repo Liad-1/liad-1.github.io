@@ -220,7 +220,7 @@ const others = projects.filter((p) => p !== featured);
                 <Icon name="linkedin" />
                 <span>
                   <small>LinkedIn</small>
-                  {LINKEDIN_URL.replace(/^https?:\/\/(www\.)?/, '')}
+                  {LINKEDIN_URL.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
                 </span>
               </a>
             </li>
