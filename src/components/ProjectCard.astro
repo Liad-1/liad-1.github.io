@@ -1,0 +1,61 @@
+---
+import type { Project } from '../data/projects';
+
+interface Props {
+  project: Project;
+}
+
+const { title, description, tags, url, repo } = Astro.props.project;
+---
+
+<article class="card">
+  <h2>{title}</h2>
+  <p>{description}</p>
+  <ul class="tags">
+    {tags.map((tag) => <li>{tag}</li>)}
+  </ul>
+  {
+    (url || repo) && (
+      <p class="links">
+        {url && <a href={url}>Live site</a>}
+        {repo && <a href={repo}>Source</a>}
+      </p>
+    )
+  }
+</article>
+
+<style>
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+  h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem;
+  }
+  p {
+    margin: 0 0 0.75rem;
+  }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0 0 0.75rem;
+    padding: 0;
+  }
+  .tags li {
+    font-size: 0.8rem;
+    padding: 0.1rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .links {
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+  }
+</style>

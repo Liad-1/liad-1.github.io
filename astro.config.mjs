@@ -1,0 +1,8 @@
+// @ts-check
+import { defineConfig } from 'astro/config';
+
+// https://docs.astro.build/en/reference/configuration-reference/
+export default defineConfig({
+  // TODO: replace with your real domain (used for canonical URLs and sitemaps)
+  site: 'https://example.com',
+});

@@ -1,0 +1,45 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE_TITLE } from '../consts';
+
+const recentPosts = (await getCollection('blog', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 3);
+
+const formatDate = (date: Date) =>
+  date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+---
+
+<BaseLayout>
+  <section>
+    <h1>Hi, I'm {SITE_TITLE} 👋</h1>
+    <p>
+      I'm a developer who enjoys building things for the web. This is where I share my projects
+      and write about what I'm learning.
+    </p>
+    <p>
+      <a href="/about">More about me</a> · <a href="/projects">See my projects</a>
+    </p>
+  </section>
+
+  <section>
+    <h2>Recent posts</h2>
+    {
+      recentPosts.length === 0 ? (
+        <p class="muted">No posts yet.</p>
+      ) : (
+        <ul class="post-list">
+          {recentPosts.map((post) => (
+            <li>
+              <a href={`/blog/${post.id}/`}>{post.data.title}</a>
+              <time class="muted" datetime={post.data.pubDate.toISOString()}>
+                {formatDate(post.data.pubDate)}
+              </time>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+</BaseLayout>
