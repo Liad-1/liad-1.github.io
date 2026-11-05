@@ -33,4 +33,12 @@ export const projects: Project[] = [
     repo: 'https://github.com/Liad-1/binarytree',
     demo: '/demos/binarytree/index.html',
   },
+  {
+    title: 'Minesweeper (Python)',
+    description:
+      'Classic Minesweeper built with pygame: a main menu, a safe first click, flags, a timer and mine counter, and an in-game settings screen for board size and mine density.',
+    tags: ['Python', 'pygame', 'pygbag'],
+    repo: 'https://github.com/Liad-1/Minesweeper',
+    demo: '/demos/minesweeper/index.html',
+  },
 ];

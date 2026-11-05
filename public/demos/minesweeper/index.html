@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Minesweeper (Python)</title>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+    <style>
+      :root {
+        --bg: #ffffff;
+        --surface: #f5f5f7;
+        --text: #1d1d1f;
+        --muted: #6e6e73;
+        --accent: #4f46e5;
+        --border: #e5e5ea;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #111114;
+          --surface: #1c1c21;
+          --text: #f2f2f5;
+          --muted: #a1a1aa;
+          --accent: #818cf8;
+          --border: #2c2c33;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.6;
+      }
+      main { max-width: 64rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+      a { color: var(--accent); }
+      .back { text-decoration: none; }
+      h1 { margin: 0.75rem 0 0.25rem; line-height: 1.25; }
+      .muted { color: var(--muted); margin: 0 0 0.5rem; }
+      .howto { margin: 0 0 1rem; }
+      kbd {
+        font: 0.85em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        padding: 0.05rem 0.35rem;
+        border: 1px solid var(--border);
+        border-radius: 0.3rem;
+        background: var(--surface);
+      }
+      .stage {
+        /* The game window is 854 × 751 (20 × 15 cells at scale 1.2). */
+        width: min(100%, calc((100vh - 4rem) * 854 / 751), 854px);
+        margin: 0 auto;
+        background: #c0c0c0;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        aspect-ratio: 854 / 751;
+      }
+      iframe { display: block; width: 100%; height: 100%; border: 0; }
+      .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+      .btn {
+        display: inline-block;
+        padding: 0.6rem 1.1rem;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .btn:hover { background: var(--surface); }
+      .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .btn--primary:hover { background: var(--accent); opacity: 0.9; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="../../projects/">← Back to projects</a>
+      <h1>Minesweeper (Python)</h1>
+      <p class="muted">
+        The original Python + pygame game, packaged with pygbag and running on CPython compiled to WebAssembly.
+        The first load downloads the Python runtime (a few MB).
+      </p>
+      <p class="howto">
+        <strong>Left-click</strong> to reveal a cell, <strong>right-click</strong> to flag it.
+        The smiley starts a new game, the gear opens the settings (click it again to save; the game restarts),
+        and <kbd>Esc</kbd> pauses.
+      </p>
+      <div class="stage">
+        <iframe id="game" src="game/index.html" title="Minesweeper" allow="autoplay; fullscreen"></iframe>
+      </div>
+      <div class="actions">
+        <button class="btn btn--primary" type="button" onclick="location.reload()">↻ Restart</button>
+        <button class="btn" type="button" id="reset-settings">Reset settings</button>
+        <a class="btn" href="https://github.com/Liad-1/Minesweeper">View source on GitHub</a>
+      </div>
+    </main>
+    <script>
+      const game = document.getElementById('game');
+      // Give the game keyboard focus (for Esc) once it is clicked.
+      game.addEventListener('load', () => game.contentWindow.focus());
+      document.getElementById('reset-settings').addEventListener('click', () => {
+        try { localStorage.removeItem('minesweeper-settings'); } catch {}
+        location.reload();
+      });
+    </script>
+  </body>
+</html>

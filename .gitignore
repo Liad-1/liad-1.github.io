@@ -26,3 +26,6 @@ Thumbs.db
 
 # downloaded build tools (TeaVM)
 .cache/
+
+# pygbag build output (copied into public/demos/ by scripts/build-python.sh)
+wasm/minesweeper/build/
