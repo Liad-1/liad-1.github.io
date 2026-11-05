@@ -4,17 +4,10 @@ import ProjectCard from '../components/ProjectCard.astro';
 import { projects } from '../data/projects';
 ---
 
-<BaseLayout title="Projects" description="Things I've built.">
+<BaseLayout title="Projects" description="Projects by Liad.">
   <h1>Projects</h1>
-  <div class="grid">
+  <p class="muted">Things I've built. Source code is on GitHub.</p>
+  <div class="project-grid">
     {projects.map((project) => <ProjectCard project={project} />)}
   </div>
 </BaseLayout>
-
-<style>
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
-    gap: 1rem;
-  }
-</style>

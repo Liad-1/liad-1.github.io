@@ -1,6 +1,5 @@
 /**
  * Prefix an internal path with the site's base path (set in astro.config.mjs).
- * Use this for every internal link, e.g. withBase('/about') -> '/PersonalWebsite/about'.
  */
 export function withBase(path: string): string {
   const base = import.meta.env.BASE_URL.replace(/\/$/, '');

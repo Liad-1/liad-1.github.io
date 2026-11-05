@@ -2,22 +2,16 @@ export interface Project {
   title: string;
   description: string;
   tags: string[];
+  repo: string;
   url?: string;
-  repo?: string;
 }
 
-// Replace these placeholders with your own projects.
 export const projects: Project[] = [
   {
-    title: 'Personal Website',
-    description: 'This site, built with Astro and deployed as static HTML.',
-    tags: ['Astro', 'TypeScript', 'CSS'],
-    repo: 'https://github.com/your-username/personal-website',
-  },
-  {
-    title: 'Project Two',
-    description: 'A short description of what this project does and why it matters.',
-    tags: ['Python'],
-    url: 'https://example.com',
+    title: 'Quicksort Graphics (C)',
+    description:
+      'A real-time visualization of quicksort written in C. A sorting thread rearranges 100 values while an OpenGL/GLFW window draws each step as bars.',
+    tags: ['C', 'OpenGL', 'GLFW', 'pthreads'],
+    repo: 'https://github.com/Liad-1/quicksort-graphics-C',
   },
 ];

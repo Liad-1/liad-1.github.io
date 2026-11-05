@@ -1,16 +1,10 @@
 // Site-wide settings. Edit these first.
-export const SITE_TITLE = 'Your Name';
-export const SITE_DESCRIPTION = 'Personal website of Your Name: projects, writing, and more.';
+export const SITE_TITLE = 'Liad';
+export const SITE_DESCRIPTION = 'Personal website of Liad: projects and more.';
+
+export const GITHUB_URL = 'https://github.com/Liad-1';
 
 export const NAV_LINKS = [
   { href: '/', label: 'Home' },
-  { href: '/about', label: 'About' },
   { href: '/projects', label: 'Projects' },
-  { href: '/blog', label: 'Blog' },
-] as const;
-
-export const SOCIAL_LINKS = [
-  { href: 'https://github.com/your-username', label: 'GitHub' },
-  { href: 'https://www.linkedin.com/in/your-username', label: 'LinkedIn' },
-  { href: 'mailto:you@example.com', label: 'Email' },
 ] as const;

@@ -1,53 +1,8 @@
 ---
-import { SITE_TITLE, SOCIAL_LINKS } from '../consts';
-
+import { SITE_TITLE, GITHUB_URL } from '../consts';
 const year = new Date().getFullYear();
 ---
 
-<footer>
-  <p>&copy; {year} {SITE_TITLE}</p>
-  <ul>
-    {
-      SOCIAL_LINKS.map(({ href, label }) => (
-        <li>
-          <a href={href} rel="me noopener" target={href.startsWith('http') ? '_blank' : undefined}>
-            {label}
-          </a>
-        </li>
-      ))
-    }
-  </ul>
+<footer class="site-footer">
+  <p>© {year} {SITE_TITLE} · <a href={GITHUB_URL}>GitHub</a></p>
 </footer>
-
-<style>
-  footer {
-    border-top: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 0.9rem;
-    max-width: var(--max-width);
-    width: 100%;
-    margin: 0 auto;
-    padding: 1.5rem 1rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.5rem;
-    justify-content: space-between;
-    align-items: center;
-  }
-  p {
-    margin: 0;
-  }
-  ul {
-    display: flex;
-    gap: 1rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  a {
-    color: var(--muted);
-  }
-  a:hover {
-    color: var(--text);
-  }
-</style>

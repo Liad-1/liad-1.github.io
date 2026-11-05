@@ -1,68 +1,30 @@
 ---
-import { NAV_LINKS, SITE_TITLE } from '../consts';
+import { SITE_TITLE, NAV_LINKS } from '../consts';
 import { withBase } from '../utils/url';
 
-const trim = (p: string) => p.replace(/\/$/, '');
-const current = trim(Astro.url.pathname);
-const isActive = (href: string) => {
-  const target = trim(withBase(href));
-  return href === '/' ? current === target : current === target || current.startsWith(`${target}/`);
-};
+const normalize = (p: string) => p.replace(/\/+$/, '') || '/';
+const current = normalize(Astro.url.pathname);
 ---
 
-<header>
-  <nav>
-    <a class="brand" href={withBase('/')}>{SITE_TITLE}</a>
-    <ul>
-      {
-        NAV_LINKS.map(({ href, label }) => (
-          <li>
-            <a href={withBase(href)} aria-current={isActive(href) ? 'page' : undefined}>
-              {label}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-  </nav>
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="site-name" href={withBase('/')}>{SITE_TITLE}</a>
+    <nav aria-label="Main">
+      <ul class="nav-links">
+        {
+          NAV_LINKS.map(({ href, label }) => {
+            const full = withBase(href);
+            const active = normalize(full) === current;
+            return (
+              <li>
+                <a href={full} aria-current={active ? 'page' : undefined}>
+                  {label}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </nav>
+  </div>
 </header>
-
-<style>
-  header {
-    border-bottom: 1px solid var(--border);
-  }
-  nav {
-    max-width: var(--max-width);
-    margin: 0 auto;
-    padding: 1rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.5rem;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .brand {
-    font-weight: 700;
-    color: var(--text);
-    text-decoration: none;
-  }
-  ul {
-    display: flex;
-    gap: 1rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  ul a {
-    color: var(--muted);
-    text-decoration: none;
-  }
-  ul a:hover,
-  ul a[aria-current='page'] {
-    color: var(--text);
-  }
-  ul a[aria-current='page'] {
-    text-decoration: underline;
-    text-underline-offset: 0.3em;
-  }
-</style>
