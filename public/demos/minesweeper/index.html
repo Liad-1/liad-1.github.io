@@ -47,16 +47,19 @@
         background: var(--surface);
       }
       .stage {
-        /* The game window is 854 × 751 (20 × 15 cells at scale 1.2). */
-        width: min(100%, calc((100vh - 4rem) * 854 / 751), 854px);
+        /* minesweeper.js sets --ar/--ratio/--w from the board size (default 854 × 751). */
+        --ar: 854 / 751;
+        --ratio: 1.137;
+        --w: 854px;
+        width: min(100%, calc((100vh - 4rem) * var(--ratio)), var(--w));
         margin: 0 auto;
         background: #c0c0c0;
         border: 1px solid var(--border);
         border-radius: 0.75rem;
         overflow: hidden;
-        aspect-ratio: 854 / 751;
+        aspect-ratio: var(--ar);
       }
-      iframe { display: block; width: 100%; height: 100%; border: 0; }
+      canvas { display: block; width: 100%; height: 100%; cursor: pointer; outline: none; }
       .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
       .btn {
         display: inline-block;
@@ -80,16 +83,17 @@
       <a class="back" href="../../projects/">← Back to projects</a>
       <h1>Minesweeper (Python)</h1>
       <p class="muted">
-        The original Python + pygame game, packaged with pygbag and running on CPython compiled to WebAssembly.
-        The first load downloads the Python runtime (a few MB).
+        A JavaScript port of the original Python + pygame game, using its sprites, font and rules.
       </p>
       <p class="howto">
         <strong>Left-click</strong> to reveal a cell, <strong>right-click</strong> to flag it.
         The smiley starts a new game, the gear opens the settings (click it again to save; the game restarts),
         and <kbd>Esc</kbd> pauses.
+        AUTO SOLVER is still a work in progress: it makes the first move and then hands back to you
+        (click the face to play).
       </p>
       <div class="stage">
-        <iframe id="game" src="game/index.html" title="Minesweeper" allow="autoplay; fullscreen"></iframe>
+        <canvas id="canvas" tabindex="0" aria-label="Minesweeper game" oncontextmenu="event.preventDefault()"></canvas>
       </div>
       <div class="actions">
         <button class="btn btn--primary" type="button" onclick="location.reload()">↻ Restart</button>
@@ -97,10 +101,8 @@
         <a class="btn" href="https://github.com/Liad-1/Minesweeper">View source on GitHub</a>
       </div>
     </main>
+    <script src="minesweeper.js"></script>
     <script>
-      const game = document.getElementById('game');
-      // Give the game keyboard focus (for Esc) once it is clicked.
-      game.addEventListener('load', () => game.contentWindow.focus());
       document.getElementById('reset-settings').addEventListener('click', () => {
         try { localStorage.removeItem('minesweeper-settings'); } catch {}
         location.reload();

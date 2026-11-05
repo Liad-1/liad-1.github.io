@@ -26,11 +26,6 @@ if (typeof window === 'undefined') {
         if (r.cache === "only-if-cached" && r.mode !== "same-origin") {
             return;
         }
-        // Local change: the Minesweeper demo (pygbag) needs no SharedArrayBuffer and loads its
-        // Python runtime from a CDN that sends no CORP header, so leave its pages un-isolated.
-        if (new URL(r.url).pathname.includes("/demos/minesweeper/") || r.referrer.includes("/demos/minesweeper/")) {
-            return;
-        }
 
         const request = (coepCredentialless && r.mode === "no-cors")
             ? new Request(r, {

@@ -10,8 +10,7 @@
     "check": "astro check",
     "astro": "astro",
     "build:wasm": "bash scripts/build-wasm.sh",
-    "build:java": "bash scripts/build-java.sh",
-    "build:python": "bash scripts/build-python.sh"
+    "build:java": "bash scripts/build-java.sh"
   },
   "dependencies": {
     "astro": "^7.4.5"
