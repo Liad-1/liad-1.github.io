@@ -25,4 +25,12 @@ export const projects: Project[] = [
     repo: 'https://github.com/Liad-1/Pathfinder',
     demo: '/demos/pathfinder/index.html',
   },
+  {
+    title: 'Binary Tree (Java)',
+    description:
+      'An interactive binary search tree: insert and remove values, print pre-, in- and post-order traversals, and see the whole tree drawn as ASCII art after every change.',
+    tags: ['Java', 'Data structures', 'TeaVM'],
+    repo: 'https://github.com/Liad-1/binarytree',
+    demo: '/demos/binarytree/index.html',
+  },
 ];

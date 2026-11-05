@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "astro": "astro",
-    "build:wasm": "bash scripts/build-wasm.sh"
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "build:java": "bash scripts/build-java.sh"
   },
   "dependencies": {
     "astro": "^7.4.5"
