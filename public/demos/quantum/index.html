@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quantum Demo (Python)</title>
+    <link rel="icon" type="image/svg+xml" href="../../favicon.svg" />
+    <style>
+      :root {
+        --bg: #ffffff;
+        --surface: #f5f5f7;
+        --text: #1d1d1f;
+        --muted: #6e6e73;
+        --accent: #4f46e5;
+        --border: #e5e5ea;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #111114;
+          --surface: #1c1c21;
+          --text: #f2f2f5;
+          --muted: #a1a1aa;
+          --accent: #818cf8;
+          --border: #2c2c33;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.6;
+      }
+      main { max-width: 64rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+      a { color: var(--accent); }
+      .back { text-decoration: none; }
+      h1 { margin: 0.75rem 0 0.25rem; line-height: 1.25; }
+      .muted { color: var(--muted); margin: 0 0 0.5rem; }
+      .howto { margin: 0 0 1rem; }
+      .stage {
+        /* The matplotlib figure: 600 × 550 px. */
+        width: min(100%, calc((100vh - 4rem) * 600 / 550), 600px);
+        margin: 0 auto;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        aspect-ratio: 600 / 550;
+      }
+      canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+      .log {
+        margin: 1rem auto 0;
+        max-width: 600px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+      }
+      .log[hidden] { display: none; }
+      .log h2 { margin: 0 0 0.5rem; font-size: 1rem; }
+      .log h2 .muted { font-weight: 400; font-size: 0.85rem; }
+      #measure-log {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 12rem;
+        overflow-y: auto;
+        font: 0.85rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      #measure-log li { padding: 0.15rem 0; border-bottom: 1px solid var(--border); }
+      #measure-log li:last-child { border-bottom: 0; }
+      .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+      .btn {
+        display: inline-block;
+        padding: 0.6rem 1.1rem;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .btn:hover { background: var(--surface); }
+      .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+      .btn--primary:hover { background: var(--accent); opacity: 0.9; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="../../projects/">← Back to projects</a>
+      <h1>Quantum Demo (Python)</h1>
+      <p class="muted">
+        A JavaScript port of the original Python + NumPy + matplotlib animation, with the same gate maths.
+      </p>
+      <p class="howto">
+        A qubit starts in |0⟩ and goes through the gates H, Z, H, drawn as its state vector turning on the Bloch sphere.
+        <strong>Play</strong> runs the steps, <strong>Measure</strong> collapses the qubit to |0⟩ or |1⟩ with the
+        probabilities of its current state, and the <strong>Speed</strong> slider sets the pace.
+        Drag the sphere to rotate the view.
+      </p>
+      <div class="stage">
+        <canvas id="canvas" aria-label="Bloch sphere animation"></canvas>
+      </div>
+      <section class="log" id="measure-panel" aria-live="polite" hidden>
+        <h2>Measurements <span class="muted">(newest first)</span></h2>
+        <ol id="measure-log"></ol>
+      </section>
+      <div class="actions">
+        <button class="btn btn--primary" type="button" onclick="location.reload()">↻ Restart</button>
+        <a class="btn" href="https://github.com/Liad-1/QuantumDemo">View source on GitHub</a>
+      </div>
+    </main>
+    <script src="quantum.js"></script>
+  </body>
+</html>

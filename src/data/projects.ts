@@ -41,4 +41,12 @@ export const projects: Project[] = [
     repo: 'https://github.com/Liad-1/Minesweeper',
     demo: '/demos/minesweeper/index.html',
   },
+  {
+    title: 'Quantum Demo (Python)',
+    description:
+      'Animates a qubit on the Bloch sphere as quantum gates act on it: each 2×2 gate is turned into a 3D rotation, with play/pause, a speed slider and measurement that collapses the state to |0⟩ or |1⟩.',
+    tags: ['Python', 'NumPy', 'matplotlib', 'JavaScript'],
+    repo: 'https://github.com/Liad-1/QuantumDemo',
+    demo: '/demos/quantum/index.html',
+  },
 ];
