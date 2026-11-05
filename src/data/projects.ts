@@ -17,4 +17,12 @@ export const projects: Project[] = [
     repo: 'https://github.com/Liad-1/quicksort-graphics-C',
     demo: '/demos/quicksort/index.html',
   },
+  {
+    title: 'Pathfinder (C++)',
+    description:
+      "Generates a random maze with a randomized depth-first search, then solves it step by step with A* and Dijkstra's algorithm, drawn live with OpenGL/GLFW.",
+    tags: ['C++', 'OpenGL', 'GLFW', 'Threads'],
+    repo: 'https://github.com/Liad-1/Pathfinder',
+    demo: '/demos/pathfinder/index.html',
+  },
 ];

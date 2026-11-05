@@ -9,7 +9,7 @@
     "preview": "astro preview",
     "check": "astro check",
     "astro": "astro",
-    "build:wasm": "bash scripts/build-quicksort-wasm.sh"
+    "build:wasm": "bash scripts/build-wasm.sh"
   },
   "dependencies": {
     "astro": "^7.4.5"
