@@ -42,10 +42,11 @@ src/
 
 The site deploys to GitHub Pages automatically on every push to `master`
 via `.github/workflows/deploy.yml`. It is served at
-<https://riadonaru.github.io/PersonalWebsite/>.
+<https://liad-1.github.io/>.
 
 One-time setup: in the GitHub repo, go to **Settings → Pages** and set
 **Source** to **GitHub Actions**.
 
-Because the site lives under `/PersonalWebsite/`, write internal links with the
-`withBase()` helper from `src/utils/url.ts`, e.g. `href={withBase('/about')}`.
+Write internal links with the `withBase()` helper from `src/utils/url.ts`,
+e.g. `href={withBase('/about')}`, so they keep working if a `base` path is
+ever set in `astro.config.mjs`.
