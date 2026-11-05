@@ -8,16 +8,20 @@ const current = normalize(Astro.url.pathname);
 
 <header class="site-header">
   <div class="site-header__inner">
-    <a class="site-name" href={withBase('/')}>{SITE_TITLE}</a>
+    <a class="site-name" href={withBase('/')}>
+      <span class="site-name__mark" aria-hidden="true">|ψ⟩</span>
+      {SITE_TITLE}
+    </a>
     <nav aria-label="Main">
       <ul class="nav-links">
         {
           NAV_LINKS.map(({ href, label }) => {
             const full = withBase(href);
-            const active = normalize(full) === current;
+            const active = !href.includes('#') && normalize(full) === current;
+            const section = href.includes('#') ? href.split('#')[1] : undefined;
             return (
               <li>
-                <a href={full} aria-current={active ? 'page' : undefined}>
+                <a href={full} aria-current={active ? 'page' : undefined} data-section={section}>
                   {label}
                 </a>
               </li>

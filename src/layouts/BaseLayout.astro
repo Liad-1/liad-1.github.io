@@ -8,9 +8,11 @@ import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
+  /** Use the full page width (the home page) instead of the reading column. */
+  wide?: boolean;
 }
 
-const { title, description = SITE_DESCRIPTION } = Astro.props;
+const { title, description = SITE_DESCRIPTION, wide = false } = Astro.props;
 const pageTitle = title ? `${title} | ${SITE_TITLE}` : SITE_TITLE;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 ---
@@ -32,10 +34,11 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
+    <script is:inline>document.documentElement.classList.add('js');</script>
   </head>
   <body>
     <Header />
-    <main>
+    <main class:list={{ 'main--wide': wide }}>
       <slot />
     </main>
     <Footer />

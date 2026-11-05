@@ -1,8 +1,29 @@
 ---
-import { SITE_TITLE, GITHUB_URL } from '../consts';
+import Icon from './Icon.astro';
+import { SITE_TITLE, GITHUB_URL, LINKEDIN_URL } from '../consts';
+import { profile } from '../data/profile';
 const year = new Date().getFullYear();
 ---
 
 <footer class="site-footer">
-  <p>© {year} {SITE_TITLE} · <a href={GITHUB_URL}>GitHub</a></p>
+  <div class="site-footer__inner">
+    <p>© {year} {SITE_TITLE} · {profile.location}</p>
+    <ul class="footer-links">
+      <li>
+        <a href={`mailto:${profile.email}`} aria-label="Email"><Icon name="mail" /></a>
+      </li>
+      <li>
+        <a href={GITHUB_URL} aria-label="GitHub"><Icon name="github" /></a>
+      </li>
+      {
+        LINKEDIN_URL && (
+          <li>
+            <a href={LINKEDIN_URL} aria-label="LinkedIn">
+              <Icon name="linkedin" />
+            </a>
+          </li>
+        )
+      }
+    </ul>
+  </div>
 </footer>

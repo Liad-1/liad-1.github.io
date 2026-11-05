@@ -1,40 +1,376 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ProjectCard from '../components/ProjectCard.astro';
-import { GITHUB_URL } from '../consts';
+import Icon from '../components/Icon.astro';
+import { GITHUB_URL, LINKEDIN_URL, RESUME_PATH } from '../consts';
 import { projects } from '../data/projects';
+import { profile, stats, experience, skills, education, languages } from '../data/profile';
 import { withBase } from '../utils/url';
 
 const featured = projects.find((p) => p.title.startsWith('Minesweeper')) ?? projects[0];
+const others = projects.filter((p) => p !== featured);
 ---
 
-<BaseLayout>
-  <section class="hero">
-    <h1>Hi, I'm Liad.</h1>
-    <p class="lead">
-      I build software, from low-level C graphics to Python tools and experiments.
-      This is where I share what I'm working on.
-    </p>
-    <div class="actions">
-      <a class="btn btn--primary" href={withBase('/projects')}>See my projects</a>
-      <a class="btn" href={GITHUB_URL}>GitHub</a>
+<BaseLayout wide>
+  <!-- 1. Hero -->
+  <section class="hero" id="top" aria-labelledby="hero-title">
+    <div class="hero__text">
+      <p class="eyebrow">{profile.headline.split(' | ')[0]}</p>
+      <h1 id="hero-title">Hi, I'm <span class="accent-text">{profile.name}</span>.</h1>
+      <p class="lead">{profile.tagline}</p>
+      <p class="hero__bio">{profile.bio}</p>
+      <p class="hero__roles">
+        {profile.headline.split(' | ').slice(1).map((r) => <span>{r}</span>)}
+      </p>
+      <div class="actions">
+        <a class="btn btn--primary" href="#research">View Research &amp; Projects</a>
+        <a class="btn" href={GITHUB_URL}><Icon name="github" /> Explore GitHub</a>
+        <a class="btn" href="#contact"><Icon name="mail" /> Contact Me</a>
+      </div>
+    </div>
+
+    <figure class="hero__visual">
+      <canvas id="wave-canvas" width="240" height="240" aria-hidden="true"></canvas>
+      <figcaption>
+        <span>Two-source interference</span>
+        <span class="muted">Move your pointer to steer a source</span>
+      </figcaption>
+    </figure>
+
+    <ul class="stats" aria-label="Highlights">
+      {
+        stats.map((s) => (
+          <li class="stat">
+            <strong>{s.value}</strong>
+            <span>{s.label}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <!-- 2. Research & Laboratory Experience -->
+  <section class="section reveal" id="research" aria-labelledby="research-title">
+    <header class="section__head">
+      <p class="eyebrow">01 · Research</p>
+      <h2 id="research-title">Research &amp; Laboratory Experience</h2>
+      <p class="muted">Select a role to expand or collapse its details.</p>
+    </header>
+    <ol class="timeline">
+      {
+        experience.map((role, i) => (
+          <li class="timeline__item">
+            <details class="role" open={i < 2}>
+              <summary>
+                <span class="role__period">{role.period}</span>
+                <span class="role__title">{role.title}</span>
+                <span class="role__org">
+                  {role.org}
+                  {role.where && <> · {role.where}</>}
+                </span>
+                <span class="role__chevron">
+                  <Icon name="chevron" />
+                </span>
+              </summary>
+              <div class="role__body">
+                <ul class="role__points">
+                  {role.points.map((p) => (
+                    <li>{p}</li>
+                  ))}
+                </ul>
+                <ul class="tags">
+                  {role.tags.map((t) => (
+                    <li>{t}</li>
+                  ))}
+                </ul>
+              </div>
+            </details>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <!-- 3. Technical Skills -->
+  <section class="section reveal" id="skills" aria-labelledby="skills-title">
+    <header class="section__head">
+      <p class="eyebrow">02 · Toolkit</p>
+      <h2 id="skills-title">Technical Skills &amp; Toolkit</h2>
+    </header>
+    <div class="skill-grid">
+      {
+        skills.map((s) => (
+          <article class="card skill-card">
+            <h3>{s.group}</h3>
+            <ul class="badges">
+              {s.items.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+            {s.note && <p class="muted skill-card__note">{s.note}</p>}
+          </article>
+        ))
+      }
     </div>
   </section>
 
-  <section>
-    <h2>About</h2>
-    <p>
-      I like learning by building: visualizing algorithms, writing small utilities,
-      and trying out new ideas. Have a look around, or check out my code on GitHub.
-    </p>
+  <!-- Projects -->
+  <section class="section reveal" id="projects" aria-labelledby="projects-title">
+    <header class="section__head section__head--row">
+      <div>
+        <p class="eyebrow">03 · Software</p>
+        <h2 id="projects-title">Projects</h2>
+        <p class="muted">Simulations, algorithms and games, each runnable in the browser.</p>
+      </div>
+      <a class="link-arrow" href={withBase('/projects')}>All projects <Icon name="arrow" size={16} /></a>
+    </header>
+    <div class="project-grid project-grid--home">
+      {featured && <ProjectCard project={featured} featured />}
+      {others.map((p) => <ProjectCard project={p} />)}
+    </div>
   </section>
 
-  {
-    featured && (
-      <section>
-        <h2>Featured project</h2>
-        <ProjectCard project={featured} />
-      </section>
-    )
-  }
+  <!-- 4. Education -->
+  <section class="section reveal" id="education" aria-labelledby="education-title">
+    <header class="section__head">
+      <p class="eyebrow">04 · Background</p>
+      <h2 id="education-title">Education &amp; Background</h2>
+    </header>
+    <div class="edu-grid">
+      {
+        education.map((e) => (
+          <article class="card edu-card">
+            <p class="role__period">{e.period}</p>
+            <h3>{e.title}</h3>
+            <p class="edu-card__detail">
+              {e.detail} · {e.where}
+            </p>
+            {e.points.length > 0 && (
+              <ul class="badges badges--accent" aria-label="Distinctions">
+                {e.points.map((p) => (
+                  <li>{p}</li>
+                ))}
+              </ul>
+            )}
+          </article>
+        ))
+      }
+      <article class="card edu-card">
+        <p class="role__period">Languages</p>
+        <h3>Spoken languages</h3>
+        <ul class="lang-list">
+          {
+            languages.map((l) => (
+              <li>
+                <span>{l.name}</span>
+                <span class="muted">{l.level}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <!-- 5. Contact -->
+  <section class="section reveal" id="contact" aria-labelledby="contact-title">
+    <div class="contact">
+      <div>
+        <p class="eyebrow">05 · Contact</p>
+        <h2 id="contact-title">Let's talk.</h2>
+        <p class="muted">
+          Open to research collaborations, lab engineering and software roles. Email is the fastest way to reach me.
+        </p>
+        <div class="actions">
+          {
+            RESUME_PATH && (
+              <a class="btn btn--primary" href={withBase(RESUME_PATH)} download>
+                <Icon name="download" /> Download Resume
+              </a>
+            )
+          }
+          <button class="btn" type="button" id="copy-email" data-email={profile.email}>
+            <Icon name="mail" /> <span>Copy email</span>
+          </button>
+        </div>
+      </div>
+      <ul class="contact__list">
+        <li>
+          <a href={`mailto:${profile.email}`}>
+            <Icon name="mail" />
+            <span><small>Email</small>{profile.email}</span>
+          </a>
+        </li>
+        <li>
+          <a href={profile.phoneHref}>
+            <Icon name="phone" />
+            <span><small>Phone</small>{profile.phone}</span>
+          </a>
+        </li>
+        <li>
+          <a href={GITHUB_URL}>
+            <Icon name="github" />
+            <span><small>GitHub</small>{GITHUB_URL.replace('https://', '')}</span>
+          </a>
+        </li>
+        {
+          LINKEDIN_URL && (
+            <li>
+              <a href={LINKEDIN_URL}>
+                <Icon name="linkedin" />
+                <span>
+                  <small>LinkedIn</small>
+                  {LINKEDIN_URL.replace(/^https?:\/\/(www\.)?/, '')}
+                </span>
+              </a>
+            </li>
+          )
+        }
+        <li class="contact__static">
+          <Icon name="pin" />
+          <span><small>Location</small>{profile.location}</span>
+        </li>
+      </ul>
+    </div>
+  </section>
 </BaseLayout>
+
+<script>
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- Hero: two-source wave interference, one source follows the pointer ----
+  const canvas = document.getElementById('wave-canvas') as HTMLCanvasElement | null;
+  if (canvas) {
+    const ctx = canvas.getContext('2d')!;
+    const N = canvas.width; // square grid, scaled up by CSS
+    const img = ctx.createImageData(N, N);
+    const k = 0.42; // wave number (per grid cell)
+    const s1 = { x: N * 0.32, y: N * 0.5 };
+    const s2 = { x: N * 0.68, y: N * 0.5 };
+    const target = { x: s2.x, y: s2.y };
+    let t = 0;
+    let running = false;
+    let visible = true;
+
+    const accent = () => {
+      const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      return dark ? { pos: [129, 140, 248], neg: [34, 211, 238], bg: [17, 17, 20] } : { pos: [79, 70, 229], neg: [8, 145, 178], bg: [255, 255, 255] };
+    };
+
+    function render() {
+      const { pos, neg, bg } = accent();
+      const d = img.data;
+      for (let y = 0; y < N; y++) {
+        for (let x = 0; x < N; x++) {
+          const r1 = Math.hypot(x - s1.x, y - s1.y);
+          const r2 = Math.hypot(x - s2.x, y - s2.y);
+          // Sum of two circular waves with 1/sqrt(r) falloff, roughly in [-1, 1].
+          const a = Math.cos(k * r1 - t) / Math.sqrt(1 + r1 * 0.08) + Math.cos(k * r2 - t) / Math.sqrt(1 + r2 * 0.08);
+          const v = Math.max(-1, Math.min(1, a * 0.75));
+          const c = v >= 0 ? pos : neg;
+          const m = Math.abs(v) * 0.85;
+          const i = (y * N + x) * 4;
+          d[i] = bg[0] + (c[0] - bg[0]) * m;
+          d[i + 1] = bg[1] + (c[1] - bg[1]) * m;
+          d[i + 2] = bg[2] + (c[2] - bg[2]) * m;
+          d[i + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+
+    function frame() {
+      if (!running) return;
+      s2.x += (target.x - s2.x) * 0.08;
+      s2.y += (target.y - s2.y) * 0.08;
+      t += 0.12;
+      render();
+      requestAnimationFrame(frame);
+    }
+
+    function setRunning(on: boolean) {
+      if (reduceMotion) return;
+      if (on && !running) {
+        running = true;
+        requestAnimationFrame(frame);
+      } else if (!on) {
+        running = false;
+      }
+    }
+
+    canvas.parentElement!.addEventListener('pointermove', (e) => {
+      const r = canvas.getBoundingClientRect();
+      target.x = ((e.clientX - r.left) / r.width) * N;
+      target.y = ((e.clientY - r.top) / r.height) * N;
+      if (reduceMotion) {
+        s2.x = target.x;
+        s2.y = target.y;
+        render();
+      }
+    });
+    canvas.parentElement!.addEventListener('pointerleave', () => {
+      target.x = N * 0.68;
+      target.y = N * 0.5;
+    });
+
+    render();
+    new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      setRunning(visible && !document.hidden);
+    }).observe(canvas);
+    document.addEventListener('visibilitychange', () => setRunning(visible && !document.hidden));
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+  }
+
+  // ---- Reveal sections as they scroll into view ----
+  const reveals = document.querySelectorAll('.reveal');
+  if (reduceMotion || !('IntersectionObserver' in window)) {
+    reveals.forEach((el) => el.classList.add('is-visible'));
+  } else {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-visible');
+            io.unobserve(e.target);
+          }
+        }
+      },
+      { rootMargin: '0px 0px -10% 0px' },
+    );
+    reveals.forEach((el) => io.observe(el));
+  }
+
+  // ---- Highlight the nav link of the section in view ----
+  const links = new Map<string, HTMLElement>();
+  document.querySelectorAll<HTMLElement>('.nav-links a[data-section]').forEach((a) => links.set(a.dataset.section!, a));
+  const sections = [...links.keys()].map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
+  const spy = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        const a = links.get(e.target.id);
+        if (!a) continue;
+        if (e.isIntersecting) {
+          links.forEach((l) => l.removeAttribute('aria-current'));
+          a.setAttribute('aria-current', 'location');
+        }
+      }
+    },
+    { rootMargin: '-45% 0px -50% 0px' },
+  );
+  sections.forEach((s) => spy.observe(s));
+
+  // ---- Copy email ----
+  const copy = document.getElementById('copy-email');
+  copy?.addEventListener('click', async () => {
+    const label = copy.querySelector('span')!;
+    try {
+      await navigator.clipboard.writeText(copy.dataset.email!);
+      label.textContent = 'Copied!';
+    } catch {
+      window.location.href = `mailto:${copy.dataset.email}`;
+      return;
+    }
+    setTimeout(() => (label.textContent = 'Copy email'), 1800);
+  });
+</script>
