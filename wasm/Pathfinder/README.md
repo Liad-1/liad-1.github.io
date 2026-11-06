@@ -19,6 +19,14 @@ Changes from the original:
 4. `click_index` and `running` (`main.cpp`, `draw.h`) are `volatile`. The `events()`
    thread busy-waits on them; without `volatile`, the optimizer may read
    `click_index` only once, so clicks are never noticed.
+5. Faster maze generation: `rdfSearch()` sleeps `MAZE_DELAY` (2 ms, `draw.h`)
+   per step instead of `DELAY` (10 ms). The solvers still use `DELAY`.
+6. Solution line: when A* / Dijkstra reach the goal, every node on the path
+   gets `on_path = true`, and `Node::draw` draws a green line from it to its
+   `path_prev` (`drawThickLine` in `main.cpp`, a quad because WebGL ignores
+   `glLineWidth`). `hardReset` / `softReset` clear the flag.
+7. Exploration lines: while A* / Dijkstra search, `Node::draw` draws a white
+   line between two explored nodes that are linked (no wall between them).
 
 Rebuild with `npm run build:wasm` (needs Emscripten: `brew install emscripten`).
 Output goes to `public/demos/pathfinder/`.

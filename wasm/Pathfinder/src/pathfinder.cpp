@@ -74,6 +74,10 @@ void _djikstras(Node *src, Node *dest)
     else
     {
         std::cout << "Found path!" << std::endl;
+        for (Node *n = src; n->path_prev != nullptr; n = n->path_prev)
+        {
+            n->on_path = true; // green line from n back to n->path_prev
+        }
         Node *temp = src->path_prev;
         while (temp->path_prev != nullptr)
         {
@@ -155,6 +159,10 @@ void _aStar(Node *src, Node *dest)
     else
     {
         std::cout << "Found path!" << std::endl;
+        for (Node *n = src; n->path_prev != nullptr; n = n->path_prev)
+        {
+            n->on_path = true; // green line from n back to n->path_prev
+        }
         Node *temp = src->path_prev;
         while (temp->path_prev != nullptr)
         {
@@ -178,7 +186,7 @@ void rdfSearch()
             total_visited++;
         }
         history.push(myNode);
-        msleep(DELAY);
+        msleep(MAZE_DELAY);
         myNode->highlight = false;
         myNode = link(myNode);
         if (myNode == nullptr)

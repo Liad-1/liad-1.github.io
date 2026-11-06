@@ -56,6 +56,7 @@ void hardReset()
 
             Node::nodes[j][i].explored = false;
             Node::nodes[j][i].visited = false;
+            Node::nodes[j][i].on_path = false;
 
             Node::nodes[j][i].start_dist = std::numeric_limits<int>::max();
             Node::nodes[j][i].end_dist = std::numeric_limits<float>::max();
@@ -79,6 +80,7 @@ void softReset()
 
             Node::nodes[j][i].explored = false;
             Node::nodes[j][i].visited = false;
+            Node::nodes[j][i].on_path = false;
 
             Node::nodes[j][i].start_dist = std::numeric_limits<int>::max();
             Node::nodes[j][i].end_dist = std::numeric_limits<float>::max();

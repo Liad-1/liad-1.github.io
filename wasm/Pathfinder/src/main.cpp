@@ -20,6 +20,24 @@ void drawLine(float x1, float y1, float x2, float y2, float r, float g, float b)
     glColor3f(1.0f, 1.0f, 1.0f);
 }
 
+/* Horizontal or vertical line drawn as a filled quad (WebGL ignores glLineWidth > 1). */
+void drawThickLine(float x1, float y1, float x2, float y2, float thickness, float r, float g, float b)
+{
+    float hx = 0.0f, hy = 0.0f;
+    if (y1 == y2)
+        hy = thickness * ASPECT_RATIO / 2.0f; // same on-screen thickness as a vertical line
+    else
+        hx = thickness / 2.0f;
+    glColor3f(r, g, b);
+    glBegin(GL_QUADS);
+    glVertex2f(x1 - hx, y1 - hy);
+    glVertex2f(x2 - hx, y2 - hy);
+    glVertex2f(x2 + hx, y2 + hy);
+    glVertex2f(x1 + hx, y1 + hy);
+    glEnd();
+    glColor3f(1.0f, 1.0f, 1.0f);
+}
+
 void drawSquare(float x, float y, float size, float r, float g, float b, bool fill)
 {
     float adjustedHeight = size * ASPECT_RATIO;

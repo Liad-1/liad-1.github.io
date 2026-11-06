@@ -40,6 +40,7 @@ public:
 
     bool explored = false;
     bool visited = false;
+    bool on_path = false; // part of the found solution: draw a green line to path_prev
 
     Node *path_prev; // For when a path is found
     std::stack<Node *> neighbors;

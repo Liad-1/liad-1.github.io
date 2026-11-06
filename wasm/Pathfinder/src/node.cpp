@@ -65,6 +65,24 @@ void Node::draw()
 
 void Node::draw(float r, float g, float b, bool fill)
 {
+    // White line to each linked, explored neighbor (up and right only, so each link is drawn once).
+    if (explored)
+    {
+        Node *up = (y + 1 < HEIGHT) ? &nodes[x][y + 1] : nullptr;
+        Node *right = (x + 1 < WIDTH) ? &nodes[x + 1][y] : nullptr;
+        if (up && links[0] && up->explored && !(on_path && up->on_path))
+        {
+            drawThickLine(trans_x, trans_y, up->trans_x, up->trans_y, CIRCLE_RADIOUS / 2.0f, 1.0f, 1.0f, 1.0f);
+        }
+        if (right && links[3] && right->explored && !(on_path && right->on_path))
+        {
+            drawThickLine(trans_x, trans_y, right->trans_x, right->trans_y, CIRCLE_RADIOUS / 2.0f, 1.0f, 1.0f, 1.0f);
+        }
+    }
+    if (on_path && path_prev != nullptr)
+    {
+        drawThickLine(trans_x, trans_y, path_prev->trans_x, path_prev->trans_y, CIRCLE_RADIOUS / 2.0f, 0.0f, 1.0f, 0.0f);
+    }
     if (fill)
     {
         drawSquare(trans_x, trans_y, CIRCLE_RADIOUS, r, g, b, fill);
