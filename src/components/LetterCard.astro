@@ -1,0 +1,70 @@
+---
+import Icon from './Icon.astro';
+import type { Letter } from '../data/letters';
+import { withBase } from '../utils/url';
+
+interface Props {
+  letter: Letter;
+}
+
+const { letter: l } = Astro.props;
+const fileType = l.file.toLowerCase().endsWith('.pdf') ? 'PDF' : 'Image';
+---
+
+<article class:list={['card', 'letter-card', { 'letter-card--archived': l.archived }]} id={l.id}>
+  <a
+    class="letter-card__preview"
+    href={withBase(l.file)}
+    target="_blank"
+    rel="noopener"
+    aria-label={`Open ${l.title} from ${l.author}`}
+  >
+    <img
+      src={withBase(l.thumb)}
+      alt={`First page of ${l.title}`}
+      loading="lazy"
+      decoding="async"
+      width="360"
+      height="510"
+    />
+  </a>
+  <div class="letter-card__body">
+    <p class="role__period">{l.dateLabel}</p>
+    <h3>{l.title}</h3>
+    <p class="letter-card__author">
+      <strong>{l.author}</strong>
+      <span class="muted">{l.role}</span>
+    </p>
+    {l.archived && l.archiveNote && <p class="letter-card__note">{l.archiveNote}</p>}
+    <p class="letter-card__summary">{l.summary}</p>
+    {
+      l.quote && (
+        <blockquote class="letter-card__quote">
+          “{l.quote}”
+          {l.language !== 'English' && <span class="muted"> (translated from {l.language})</span>}
+        </blockquote>
+      )
+    }
+    <ul class="tags">
+      {l.archived && <li>Outdated</li>}
+      <li>{l.language}</li>
+      <li>
+        {fileType}
+        {l.pages && ` · ${l.pages} ${l.pages === 1 ? 'page' : 'pages'}`}
+      </li>
+    </ul>
+    <p class="card__links">
+      <a
+        class:list={['btn', { 'btn--primary': !l.archived }]}
+        href={withBase(l.file)}
+        target="_blank"
+        rel="noopener"
+      >
+        View
+      </a>
+      <a href={withBase(l.file)} download>
+        <Icon name="download" size={16} /> Download
+      </a>
+    </p>
+  </div>
+</article>

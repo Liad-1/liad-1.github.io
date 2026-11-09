@@ -1,0 +1,106 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import LetterCard from '../components/LetterCard.astro';
+import Icon from '../components/Icon.astro';
+import { categories, letters } from '../data/letters';
+
+const newestFirst = (a: { date: string }, b: { date: string }) => b.date.localeCompare(a.date);
+
+const groups = categories
+  .map((c) => ({
+    ...c,
+    items: letters.filter((l) => l.category === c.id && !l.archived).sort(newestFirst),
+  }))
+  .filter((g) => g.items.length > 0);
+
+const archived = letters.filter((l) => l.archived).sort(newestFirst);
+---
+
+<BaseLayout
+  title="Letters & Awards"
+  description="Letters of recommendation and academic awards for Liad Or."
+  wide
+>
+  <header class="letters-head">
+    <p class="eyebrow">Letters & Awards</p>
+    <h1>Recommendations &amp; recognition</h1>
+    <p class="muted">
+      Letters from faculty and research supervisors, plus academic honors. Select a document to open
+      the full original.
+    </p>
+    <nav class="letters-jump" aria-label="Categories">
+      {
+        groups.map((g) => (
+          <a href={`#${g.id}`}>
+            {g.title}
+            <span class="letters-jump__count">{g.items.length}</span>
+          </a>
+        ))
+      }
+      {
+        archived.length > 0 && (
+          <a href="#archive" class="letters-jump--muted">
+            Archive
+            <span class="letters-jump__count">{archived.length}</span>
+          </a>
+        )
+      }
+    </nav>
+  </header>
+
+  {
+    groups.map((g) => (
+      <section class="letters-group" id={g.id} aria-labelledby={`${g.id}-title`}>
+        <header class="section__head">
+          <h2 id={`${g.id}-title`}>{g.title}</h2>
+          <p class="muted">{g.blurb}</p>
+        </header>
+        <div class="letter-grid">
+          {g.items.map((l) => (
+            <LetterCard letter={l} />
+          ))}
+        </div>
+      </section>
+    ))
+  }
+
+  {
+    archived.length > 0 && (
+      <section class="letters-group letters-archive" id="archive" aria-labelledby="archive-title">
+        <details>
+          <summary>
+            <span>
+              <h2 id="archive-title">Archive</h2>
+              <span class="muted">
+                Older documents whose details have since changed, kept for reference.
+              </span>
+            </span>
+            <span class="role__chevron" aria-hidden="true"><Icon name="chevron" size={16} /></span>
+          </summary>
+          <div class="letter-grid">
+            {archived.map((l) => (
+              <LetterCard letter={l} />
+            ))}
+          </div>
+        </details>
+      </section>
+    )
+  }
+</BaseLayout>
+
+<script is:inline>
+  // Open the archive when someone follows a link to it or to a card inside it.
+  (function () {
+    function openFromHash() {
+      var id = location.hash.slice(1);
+      var el = id && document.getElementById(id);
+      var d = el && (el.matches('details') ? el : el.querySelector('details') || el.closest('details'));
+      if (d && !d.open) {
+        d.open = true;
+        el.scrollIntoView();
+      }
+    }
+    window.addEventListener('hashchange', openFromHash);
+    openFromHash();
+  })();
+</script>
