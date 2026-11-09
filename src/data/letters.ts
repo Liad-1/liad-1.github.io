@@ -47,7 +47,7 @@ export const categories: { id: LetterCategory; title: string; blurb: string }[] 
   {
     id: 'recommendation',
     title: 'Letters of Recommendation',
-    blurb: 'Written by faculty and research supervisors.',
+    blurb: 'Written by faculty, research supervisors and high-school teachers.',
   },
   {
     id: 'award',
@@ -92,6 +92,39 @@ export const letters: Letter[] = [
     archived: true,
     archiveNote:
       'Written before my first-year grades were finalized. It cites an average of 94.9; my final first-year average is 96.64.',
+  },
+  {
+    id: 'bernstein-2021',
+    category: 'recommendation',
+    title: 'Letter of Recommendation',
+    author: 'Dana Bernstein',
+    role: 'Mathematics Teacher, Science Park High School, Ness Ziona',
+    date: '2021-08-02',
+    dateLabel: 'Aug 2021',
+    language: 'Hebrew',
+    summary:
+      'From my 11th-grade math teacher, who prepared me for the 5-unit math matriculation exam (final grade: 95). Written for the IDF ahead of my military service.',
+    quote:
+      'He stood out for his drive to understand every concept in depth and his ability to explain what he understood to the rest of the class.',
+    file: '/letters/bernstein-math-2021.pdf',
+    thumb: '/letters/bernstein-math-2021-thumb.jpg',
+    pages: 1,
+  },
+  {
+    id: 'ran-2020',
+    category: 'recommendation',
+    title: 'Letter of Recommendation',
+    author: 'Yeela Ran',
+    role: 'Homeroom Teacher, Science Park Education Campus, Ness Ziona',
+    date: '2020-12-27',
+    dateLabel: 'Dec 2020',
+    language: 'Hebrew',
+    summary:
+      'From my homeroom teacher of three years (2018–2021) in the honors medical-sciences track. It covers my character and academic record, and my volunteering as a flutist at school ceremonies.',
+    quote: 'An intelligent, curious student with very good achievements.',
+    file: '/letters/ran-homeroom-2020.pdf',
+    thumb: '/letters/ran-homeroom-2020-thumb.jpg',
+    pages: 1,
   },
   {
     id: 'deans-list-2025',
